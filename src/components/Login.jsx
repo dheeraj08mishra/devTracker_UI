@@ -1,6 +1,9 @@
 import { useState } from "react";
 import validator from "validator";
 import { BASE_URL } from "../utils/constants";
+import { useDispatch } from "react-redux";
+import { currentLoggedInUser } from "../utils/redux/userProfileSlice";
+import { toast } from "react-hot-toast";
 
 const Login = () => {
   const [signUp, setSignUp] = useState(true);
@@ -8,16 +11,29 @@ const Login = () => {
   const [lastNameInput, setLastNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
+  const dispatch = useDispatch();
 
   const handleUserAuth = async () => {
+    const resetAllInputs = () => {
+      setFirstNameInput("");
+      setLastNameInput("");
+      setEmailInput("");
+      setPasswordInput("");
+    };
     if (signUp) {
       if (validator.isEmpty(firstNameInput)) {
-        console.log("First Name cannot be empty.");
+        toast.error("First Name cannot be empty.", {
+          removeDelay: 3000,
+          id: "firstNameError",
+        });
         return;
       }
 
       if (validator.isEmpty(lastNameInput)) {
-        console.log("Lat Name cannot be empty.");
+        toast.error("Last Name cannot be empty.", {
+          removeDelay: 3000,
+          id: "lastNameError",
+        });
         return;
       }
 
@@ -25,8 +41,12 @@ const Login = () => {
         !validator.isLength(firstNameInput, { min: 3, max: 20 }) ||
         !validator.isAlpha(firstNameInput)
       ) {
-        console.log(
-          "First name must be between 3 and 20 characters and contain only letters."
+        toast.error(
+          "First name must be between 3 and 20 characters and contain only letters.",
+          {
+            removeDelay: 3000,
+            id: "firstNameLengthError",
+          }
         );
         return;
       }
@@ -34,15 +54,22 @@ const Login = () => {
         !validator.isLength(lastNameInput, { min: 3, max: 20 }) ||
         !validator.isAlpha(lastNameInput)
       ) {
-        console.log(
-          "Last name must be between 3 and 20 characters and contain only letters."
+        toast.error(
+          "Last name must be between 3 and 20 characters and contain only letters.",
+          {
+            removeDelay: 3000,
+            id: "lastNameLengthError",
+          }
         );
         return;
       }
     }
 
     if (validator.isEmpty(emailInput) || !validator.isEmail(emailInput)) {
-      console.log("Please enter a valid email.");
+      toast.error("Please enter a valid email.", {
+        removeDelay: 3000,
+        id: "emailError",
+      });
       return;
     }
 
@@ -57,11 +84,19 @@ const Login = () => {
       })
     ) {
       if (signUp) {
-        console.log(
-          "Password must be at least 8 characters with upper, lower, number and symbol."
+        toast.error(
+          "Password must be at least 8 characters with upper, lower, number and symbol.",
+          {
+            removeDelay: 3000,
+            id: "passwordError",
+          }
         );
+        return;
       } else {
-        console.log("Invalid Credentials.");
+        toast.error("Invalid Credentials.", {
+          removeDelay: 3000,
+          id: "invalidCredentialsError",
+        });
       }
       return;
     }
@@ -72,7 +107,6 @@ const Login = () => {
       email: validator.normalizeEmail(emailInput),
       password: passwordInput,
     };
-    console.log(userData);
 
     try {
       let apiEndpoint = signUp ? "/signup" : "/login";
@@ -84,12 +118,23 @@ const Login = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        console.error("Error:", data.message);
+        toast.error(data.message || "Authentication failed.", {
+          removeDelay: 3000,
+          id: "authError",
+        });
         return;
       }
-      console.log("Success:", data.message);
+      dispatch(currentLoggedInUser(data.user));
+      resetAllInputs();
+      toast.success(data.message, {
+        removeDelay: 3000,
+        id: "authSuccess",
+      });
     } catch (error) {
-      console.error("Error during authentication:", error);
+      toast.error(error, {
+        removeDelay: 3000,
+        id: "networkError",
+      });
       return;
     }
   };
